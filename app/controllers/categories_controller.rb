@@ -1,5 +1,21 @@
 class CategoriesController < ApplicationController
-  before_filter :authenticate_admin!
+  before_filter :authenticate_admin!, :except=>[:set_filter]
+
+  def set_filter
+    if params[:id]=="clear"
+      Thread.current[:category_id_filter]=nil
+    else
+      Thread.current[:category_id_filter]=params[:id]
+    end
+    session["category_id_filter_#{SubInstance.current.id}"]=Thread.current[:category_id_filter]
+    Rails.logger.debug("Setting category id filter to #{params[:id]} #{Thread.current[:category_id_filter]} #{session["category_id_filter_#{SubInstance.current.id}"]}")
+    if request.referer
+      redirect_to request.referer.split("?")[0]
+    else
+      redirect_to "/ideas"
+    end
+  end
+
   # GET /categories
   # GET /categories.xml
   def index
@@ -49,7 +65,7 @@ class CategoriesController < ApplicationController
 
     respond_to do |format|
       if @category.save
-        format.html { redirect_to(@category, :notice => 'Category was successfully created.') }
+        format.html { redirect_to(@category, :notice => tr("Category was successfully created.","here")) }
         format.xml  { render :xml => @category, :status => :created, :location => @category }
       else
         format.html { render :action => "new" }
@@ -62,6 +78,10 @@ class CategoriesController < ApplicationController
   # PUT /categories/1.xml
   def update
     @category = Category.unscoped.find(params[:id])
+
+    if @category.sub_instance.short_name=="default" and not current_user.is_root?
+      redirect_to :back
+    end
 
     respond_to do |format|
       if @category.update_attributes(params[:category])
@@ -78,6 +98,11 @@ class CategoriesController < ApplicationController
   # DELETE /categories/1.xml
   def destroy
     @category = Category.unscoped.find(params[:id])
+
+    if @category.sub_instance.short_name=="default" and not current_user.is_root?
+      redirect_to :back
+    end
+
     @category.destroy
 
     respond_to do |format|

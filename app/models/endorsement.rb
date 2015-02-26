@@ -37,7 +37,7 @@ class Endorsement < ActiveRecord::Base
   # docs: http://noobonrails.blogspot.com/2007/02/actsaslist-makes-lists-drop-dead-easy.html
   #acts_as_list :scope => "endorsements.user_id = #{user_id} AND status = 'active'"
 
-  acts_as_list #:scope => "endorsements.status = 'active'"
+  acts_as_list :scope => [:sub_instance_id,:user_id] #:scope => "endorsements.status = 'active'"
 
   after_create :on_active_entry
 
@@ -116,6 +116,7 @@ class Endorsement < ActiveRecord::Base
   
   # check to see if they've added a new #1 idea, and create the activity
   def check_for_top_idea
+    return
     if self.position == 1
       if self.id != user.top_endorsement_id
         user.top_endorsement = self
@@ -211,7 +212,11 @@ class Endorsement < ActiveRecord::Base
     Endorsement.update_all(
       "#{position_column} = (#{position_column} + 1), score = score - value*#{user.score}",  "#{scope_condition}"
     )
-  end  
+  end
+
+  def insert_lowest_at(position)
+    self.insert_at([user.endorsements.where(:sub_instance_id=>self.sub_instance_id).count,4].min)
+  end
   
   def insert_at_position(position)
     remove_from_list
@@ -255,6 +260,10 @@ class Endorsement < ActiveRecord::Base
     self.value = -1
   end
 
+  def idea
+    Idea.unscoped.find(idea_id) if idea_id
+  end
+
   private
   
   def delete_update_counts
@@ -296,5 +305,6 @@ class Endorsement < ActiveRecord::Base
       end
     end
   end
-  
+
+
 end

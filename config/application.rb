@@ -9,7 +9,7 @@ if defined?(Bundler)
   # Bundler.require(:default, :assets, Rails.env)
 end
 
-module SocialInnovation
+module YourPriorities
   class Application < Rails::Application
 
     require 'core_extensions'
@@ -62,8 +62,13 @@ module SocialInnovation
     config.filter_parameters = [:password, :password_confirmation]
 
     config.assets.initialize_on_precompile = false
+    config.middleware.use Rack::Cors do
+      allow do
+        origins '*'
+        resource '*', :headers => :any, :methods => [:get, :put, :post, :options]
+      end
+    end
 
-    NB_CONFIG = { 'api_exclude_fields' => [:ip_address, :user_agent, :referrer, :google_token, :google_crawled_at, :activation_code, :salt, :email, :first_name, :last_name, :crypted_password, :is_tagger, :sub_instance_id, :ip_address, :user_agent, :remember_token, :remember_token_expires_at, :referrer, :zip, :birth_date, :city, :state, :is_comments_subscribed, :is_finished_subscribed, :is_followers_subscribed, :is_mergeable, :is_capital_subscribed, :is_messages_subscribed, :report_frequency, :is_point_changes_subscribed, :is_subscribed, :is_idea_changes_subscribed, :contacts_count, :contacts_invited_count, :contacts_members_count, :contacts_not_invited_count, :code, :rss_code, :address] }
   end
 
   if defined?(PhusionPassenger)
@@ -75,7 +80,6 @@ module SocialInnovation
 
   require 'open-uri'
   require 'validates_uri_existence_of'
-
   require 'timeout'
   require 'load_windows_contacts'
   require 'load_yahoo_contacts'

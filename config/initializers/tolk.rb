@@ -4,8 +4,14 @@
 # See github.com/tolk/tolk for more informations
 
 
-Tolk.config do |config|
+# HACK TO GET AROUND TOLK GEM NOT CRASHING ON ATOM /tolk/locales#show
+def tolk_locale_url(something=nil)
+  "/"
+end
 
+Tolk.config do |config|
+    config.disable_apply_changes_with = "Translations not active right away. We export regularly. citizens@citizens.is"
+    config.master_translation_locale = "is"
   # If you need to add a mapping do it like this :
   # May we suggest you use http://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
     config.mapping['fr-ES']   = 'Frañol !'
@@ -347,7 +353,7 @@ Tolk.config do |config|
     config.mapping['st-ZA']   = 'Southern Sotho (South Africa)'
     config.mapping['sv']      = 'Swedish'
     config.mapping['sv-FI']   = 'Swedish (Finland)'
-    config.mapping['sv-SE']   = 'Swedish (Sweden)'
+    config.mapping['sv-SE']   = 'Swedish'
     config.mapping['sw']      = 'Swahili'
     config.mapping['sw-KE']   = 'Swahili (Kenya)'
     config.mapping['sw-TZ']   = 'Swahili (Tanzania)'

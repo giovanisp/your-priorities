@@ -61,12 +61,12 @@ en-AU:
     am: am
     pm: pm
   support:
+    select:
+      prompt: Please select
     array:
       words_connector: ', '
       two_words_connector: ' and '
       last_word_connector: ', and '
-    select:
-      prompt: Please select
   number:
     format:
       separator: .

@@ -61,12 +61,12 @@ et:
     am: enne lõunat
     pm: pärast lõunat
   support:
+    select:
+      prompt: Palun vali
     array:
       words_connector: ', '
       two_words_connector: ' ja '
       last_word_connector: ' ja '
-    select:
-      prompt: Palun vali
   errors:
     format: '%{attribute} %{message}'
     messages:

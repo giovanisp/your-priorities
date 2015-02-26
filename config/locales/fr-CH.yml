@@ -145,12 +145,12 @@ fr-CH:
       minute: Minute
       second: Seconde
   support:
+    select:
+      prompt: Veuillez sélectionner
     array:
       words_connector: ', '
       two_words_connector: ' et '
       last_word_connector: ' et '
-    select:
-      prompt: Veuillez sélectionner
   helpers:
     select:
       prompt: Veuillez sélectionner

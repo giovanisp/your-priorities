@@ -7,9 +7,6 @@
 #   Major.create(:name => 'Daley', :city => cities.first)
 
 # Create Categories
-
-# Create Portlet Templates
-
 i = Instance.new
 i.name = "Your Instance"
 i.description = "Your Instance"
@@ -18,6 +15,7 @@ i.layout = "application"
 i.admin_name = "Your Admin Name"
 i.admin_email = "admin@yourdomain.com"
 i.email = "admin@yourdomain.com"
+i.layout = "application"
 i.save(:validation=>false)
 
 
@@ -27,6 +25,8 @@ si.name = "Your Default Sub Instance"
 si.save(:validation=>false)
 
 Instance.current = i
+SubInstance.current = si
+sub_instance = si
 
 require 'activity'
 
@@ -41,4 +41,12 @@ u.password_confirmation="admin"
 u.email="admin@admin.is"
 u.save(:validate=>false)
 
-Category.create(:name=>"Test category", :description => "", :sub_instance_id=>si.id)
+Category.create(:name=>"Democracy", :description => "", :sub_instance_id=>sub_instance.id)
+Category.create(:name=>"Equality", :description => "", :sub_instance_id=>sub_instance.id)
+Category.create(:name=>"Future Vision", :description => "", :sub_instance_id=>sub_instance.id)
+Category.create(:name=>"Environment", :description => "", :sub_instance_id=>sub_instance.id)
+Category.create(:name=>"Social Innovation", :description => "", :sub_instance_id=>sub_instance.id)
+Category.create(:name=>"Economy", :description => "", :sub_instance_id=>sub_instance.id)
+Category.create(:name=>"Security", :description => "", :sub_instance_id=>sub_instance.id)
+Category.create(:name=>"Information Technology", :description => "", :sub_instance_id=>sub_instance.id)
+

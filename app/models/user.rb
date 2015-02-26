@@ -4,7 +4,7 @@ class User < ActiveRecord::Base
   acts_as_set_sub_instance :table_name=>"users"
 
   devise :invitable, :database_authenticatable, :registerable, :omniauthable,
-         :recoverable, :rememberable, :trackable, :validatable
+         :recoverable, :rememberable, :trackable#, :validatable
 
   include DeviseInvitable::Inviter
 
@@ -18,7 +18,8 @@ class User < ActiveRecord::Base
                   :my_gender, :buddy_icon, :terms, :status, :name, :facebook_uid,
                   :report_frequency, :is_comments_subscribed, :is_point_changes_subscribed,
                   :is_followers_subscribed, :is_finished_subscribed, :is_idea_changes_subscribed,
-                  :is_messages_subscribed, :is_capital_subscribed
+                  :is_messages_subscribed, :is_capital_subscribed, :twitter_id, :twitter_token,
+                  :twitter_secret, :twitter_profile_image_url
 
   scope :active, :conditions => "users.status in ('pending','active')"
   scope :at_least_one_endorsement, :conditions => "users.endorsements_count > 0"
@@ -62,7 +63,8 @@ class User < ActiveRecord::Base
   has_and_belongs_to_many :groups
 
   belongs_to :picture
-  has_attached_file :buddy_icon, :styles => { :icon_24 => "24x24#", :icon_35 => "35x35#", :icon_48 => "48x48#", :icon_96 => "96x96#" },
+  has_attached_file :buddy_icon, :styles => { :icon_24 => "24x24#", :icon_35 => "35x35#", :icon_48 => "48x48#", :icon_50 => "50x50#",
+                                              :icon_96 => "96x96#" },
                     :storage => PAPERCLIP_STORAGE_MECHANISM,
                     :s3_credentials => S3_CREDENTIALS
   
@@ -77,8 +79,7 @@ class User < ActiveRecord::Base
   has_one :profile, :dependent => :destroy
 
   has_many :unsubscribes, :dependent => :destroy
-  has_many :signups
-  has_many :sub_instances, :through => :signups
+  #has_many :signups
     
   has_many :endorsements, :dependent => :destroy
   has_many :ideas, :conditions => "endorsements.status = 'active'", :through => :endorsements
@@ -128,9 +129,12 @@ class User < ActiveRecord::Base
   
   validates_presence_of     :email
   validates_length_of       :email, :within => 3..100
-  validates :email, :uniqueness => {:scope => :sub_instance_id}
+  validates_uniqueness_of   :email, :scope => :sub_instance_id
   validates_format_of       :email, :with => /^[-^!$#%&'*+\/=3D?`{|}~.\w]+@[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])*(\.[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])*)+$/x
-  validates_uniqueness_of   :facebook_uid, :allow_nil => true, :allow_blank => true
+  validates_uniqueness_of   :facebook_uid, :allow_nil => true, :allow_blank => true, :scope => :sub_instance_id
+
+  validates_presence_of     :password, :if => :should_validate_password?
+  validates_confirmation_of :password, :if => :should_validate_password?
 
   #validates_presence_of     :post_code, :message => tr("Please enter your postcode.", "model/user")
   #validates_presence_of     :age_group, :message => tr("Please select your age group.", "model/user")
@@ -153,9 +157,51 @@ class User < ActiveRecord::Base
   after_create :new_user_signedup
   after_create :set_signup_country
 
+  include Workflow
+  workflow_column :status
+  workflow do
+    state :pending do
+      event :activate, transitions_to: :active
+      event :suspend, transitions_to: :suspended
+      event :remove, transitions_to: :removed
+      event :probation, transitions_to: :probation
+    end
+    state :passive do
+      event :register, transitions_to: :pending
+      event :activate, transitions_to: :active
+      event :suspend, transitions_to: :suspended
+      event :remove, transitions_to: :removed
+      event :probation, transitions_to: :probation
+    end
+    state :active do
+      event :suspend, transitions_to: :suspended
+      event :remove, transitions_to: :removed
+      event :probation, transitions_to: :probation
+    end
+    state :suspended do
+      event :remove, transitions_to: :removed
+      event :unsuspend, transitions_to: :active, meta: { validates_presence_of: [:activated_at] }
+      event :unsuspend, transitions_to: :pending, meta: { validates_presence_of: [:activation_code] }
+      event :unsuspend, transitions_to: :passive
+    end
+    state :probation do
+      event :suspend, transitions_to: :suspended
+      event :remove, transitions_to: :removed
+      event :unprobation, transitions_to: :active, meta: { validates_presence_of: [:activated_at] }
+      event :unprobation, transitions_to: :pending, meta: { validates_presence_of: [:activation_code] }
+      event :unprobation, transitions_to: :passive
+    end
+    state :removed
+  end
+
   before_save do
     self.email.downcase! if self.email
   end
+
+  def should_validate_password?
+    !self.facebook_uid and !self.twitter_id
+  end
+  
 
   def next_idea
     Idea.joins("LEFT OUTER JOIN viewed_ideas vi on vi.idea_id = ideas.id AND vi.user_id=#{self.id}").where("vi.user_id is null AND ideas.status='published'").order("random()").first
@@ -185,6 +231,16 @@ class User < ActiveRecord::Base
     end
   end
 
+  def email_required?
+  end
+
+  def email_changed?
+    return true if persisted?
+    # your code for validation for uniqueness and email format
+    # Note that this method also skips the email format validation
+    return false
+  end
+
   def confirmed?
     true
   end
@@ -198,8 +254,34 @@ class User < ActiveRecord::Base
                          email:auth.info.email,
                          password:Devise.friendly_token[0,20])
       user.save(:validate=>false)
+    else
+      user.email = auth.info.email
+      user.save(:validate=>false)
     end
     user
+  end
+
+  def self.find_for_twitter_oauth(auth, signed_in_resource=nil)
+    if auth.uid and auth.uid!=""
+      Rails.logger.debug("Logging in with twitter uid #{auth.uid} #{auth.credentials.token} #{auth.credentials.secret} #{auth.extra.raw_info.profile_image_url_https}")
+      user = User.where(:twitter_id => auth.uid).first
+      unless user
+        Rails.logger.debug("Creating new twitter user #{auth.extra.raw_info.name}")
+        user = User.create(:login=>auth.extra.raw_info.name,
+                           :twitter_id=>auth.uid,
+                           :twitter_token=>auth.credentials.token,
+                           :twitter_secret=>auth.credentials.secret,
+                           :twitter_profile_image_url=>auth.extra.raw_info.profile_image_url_https,
+                           :password=>Devise.friendly_token[0,20])
+        user.save(:validate=>false)
+      else
+        user.twitter_profile_image_url = auth.extra.raw_info.profile_image_url_https
+        user.save(:validate=>false)
+      end
+      user
+    else
+      raise "No auth.uid from Twitter"
+    end
   end
 
   def accepted_eula!
@@ -269,7 +351,11 @@ class User < ActiveRecord::Base
   end
   
   def new_user_signedup
-    ActivityUserNew.create(:user => self, :sub_instance => sub_instance)
+    begin
+      ActivityUserNew.create(:user => self, :sub_instance => sub_instance)
+    rescue
+      Rails.logger.error("Couldn't create ActivityUserNew")
+    end
   end
 
   def check_contacts
@@ -318,43 +404,6 @@ class User < ActiveRecord::Base
     end
   end
 
-  include Workflow
-  workflow_column :status
-  workflow do
-    state :pending do
-      event :activate, transitions_to: :active
-      event :suspend, transitions_to: :suspended
-      event :remove, transitions_to: :removed
-      event :probation, transitions_to: :probation
-    end
-    state :passive do
-      event :register, transitions_to: :pending
-      event :activate, transitions_to: :active
-      event :suspend, transitions_to: :suspended
-      event :remove, transitions_to: :removed
-      event :probation, transitions_to: :probation
-    end
-    state :active do
-      event :suspend, transitions_to: :suspended
-      event :remove, transitions_to: :removed
-      event :probation, transitions_to: :probation
-    end
-    state :suspended do
-      event :remove, transitions_to: :removed
-      event :unsuspend, transitions_to: :active, meta: { validates_presence_of: [:activated_at] }
-      event :unsuspend, transitions_to: :pending, meta: { validates_presence_of: [:activation_code] }
-      event :unsuspend, transitions_to: :passive
-    end
-    state :probation do
-      event :suspend, transitions_to: :suspended
-      event :remove, transitions_to: :removed
-      event :unprobation, transitions_to: :active, meta: { validates_presence_of: [:activated_at] }
-      event :unprobation, transitions_to: :pending, meta: { validates_presence_of: [:activation_code] }
-      event :unprobation, transitions_to: :passive
-    end
-    state :removed
-  end
-
    def on_pending_entry(new_state = nil, event = nil)
     self.probation_at = nil
     self.suspended_at = nil
@@ -396,7 +445,7 @@ class User < ActiveRecord::Base
     #for c in constituents
     #  c.destroy
     #end
-    self.facebook_uid = nil
+    #self.facebook_uid = nil
     save(:validate => false)
   end
   
@@ -421,7 +470,11 @@ class User < ActiveRecord::Base
   end
 
   def to_param
-    "#{id}-#{login.parameterize_full}"
+    if login
+      "#{id}-#{login.parameterize_full}"
+    else
+      "#{id}"
+    end
   end  
   
   cattr_reader :per_page
@@ -606,9 +659,13 @@ class User < ActiveRecord::Base
   end
   
   def real_name
-    return login if not attribute_present?("first_name") or not attribute_present?("last_name")
-    n = first_name + ' ' + last_name
-    n
+    if attribute_present?("first_name") and attribute_present?("last_name")
+      first_name + ' ' + last_name
+    elsif login
+      login
+    else
+      "Unknown"
+    end
   end
   
   def is_sub_instance?
@@ -697,9 +754,9 @@ class User < ActiveRecord::Base
     capitals_difference = new_capitals_count - self.capitals_count
     self.update_attribute(:capitals_count,new_capitals_count)
 
-    if capitals_difference != 0 and !self.is_admin and self.is_capital_subscribed and self.status == "active"
+    if capitals_difference > 0 and self.is_capital_subscribed and self.status == "active"
       #User.delay.send_capital_email(self.activities.last.id, capitals_difference)
-      Rails.logger.info("Sending capital email")
+      Rails.logger.debug("Sending capital email")
       SendCapitalEmail.perform_in(3.seconds, self.activities.last.id, capitals_difference)
     else
       Rails.logger.info("----------------> Not sending capital email #{capitals_difference} and #{!self.is_admin} and #{self.is_capital_subscribed} and #{self.status}")
@@ -962,8 +1019,10 @@ class User < ActiveRecord::Base
   def first_name_detected
     if self.first_name and self.first_name!=""
       self.first_name
-    else
+    elsif login
       self.login.split(" ")[0]
+    else
+      self.email
     end
   end
 
@@ -981,7 +1040,7 @@ class User < ActiveRecord::Base
   end
   
   def unsubscribe_url
-    'http://' + Instance.current.base_url_w_sub_instance + '/unsubscribes/new'
+    'https://' + Instance.current.base_url_w_sub_instance + '/unsubscribes/new'
   end
   
   def self.adapter
@@ -1022,6 +1081,7 @@ class User < ActiveRecord::Base
     idea = Idea.unscoped.find(idea_id)
     all_endorsers_and_opposers_for_idea(idea_id).each do |user|
       next unless user.is_finished_subscribed
+      next unless user.email and user.email.include?("@")
       position = Endorsement.unscoped.where(idea_id: idea_id, user_id: user.id).first.value
       UserMailer.idea_status_update(idea, status, date, subject, message, user, position).deliver
     end
@@ -1095,4 +1155,13 @@ class User < ActiveRecord::Base
       false
     end
   end
+
+  # For Monologue
+  #def password_digest(p=nil)
+  #  self.encrypted_password
+  #end
+
+  #def name
+  #  self.login
+  #end
 end

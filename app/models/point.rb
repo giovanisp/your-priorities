@@ -43,17 +43,6 @@ class Point < ActiveRecord::Base
 
   has_many :notifications, :as => :notifiable, :dependent => :destroy
 
-  define_index do
-    indexes name
-    indexes content
-    #has idea.category.name, :facet=>true, :as=>"category_name"
-    has updated_at
-    has sub_instance_id, :as=>:sub_instance_id, :type => :integer
-    has "1", :as=>:tag_count, :type=>:integer
-    set_property :enable_star => true, :min_prefix_len => 2
-    where "points.status = 'published'"
-  end
-
   def author_user
     self.author_users.select("revisions.*, users.*").order("revisions.created_at ASC").first
   end
@@ -162,7 +151,7 @@ class Point < ActiveRecord::Base
       self.user_agent = self.idea.user_agent if not self.user_agent
       self.user_id = self.idea.user_id if not self.user_id
       self.user = self.idea.user if not self.user
-      Rails.logger.debug("SELF PRIORITY: #{pp self.idea.inspect}")
+      Rails.logger.debug("SELF PRIORITY: #{self.idea.inspect}")
     else
       Rails.logger.error("No Idea for point id: #{self.id}")
       puts "No Idea for point id: #{self.id}"
@@ -256,7 +245,7 @@ class Point < ActiveRecord::Base
     self.opposer_score = 0
     self.neutral_score = 0
     for q in point_qualities.find(:all, :include => :user)
-      Rails.logger.info("point_score_debug #{q.inspect} #{self.inspect}")
+      #Rails.logger.debug("point_score_debug #{q.inspect} #{self.inspect}")
       if q.is_helpful?
         vote = q.user.quality_factor
       else
@@ -354,5 +343,9 @@ class Point < ActiveRecord::Base
 
   def set_importance(user_id, score)
   	PointImportanceScore.update_or_create(self.id, user_id, score)
+  end
+
+  def idea
+    Idea.unscoped.find(idea_id) if idea_id
   end
 end

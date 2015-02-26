@@ -2,6 +2,38 @@
 
 module ApplicationHelper
 
+  def first_image_url_from_text(text)
+    image_url = nil
+    URI.extract(text).each do |url|
+      #TODO: Check if its really an image url
+      url = url.downcase
+      image_url = url if url.include?(".png") or url.include?(".jpg") or url.include?(".jpg")
+    end
+    image_url
+  end
+
+  def currency_with_unit(amount,currency)
+    if currency=="USD"
+      number_to_currency amount, :unit=>"$", :precision=>0, :locale=>"en"
+    elsif currency=="EUR"
+      number_to_currency amount, :unit=>"EUR", :precision=>0, :locale=>"en"
+    elsif currency=="GBP"
+      number_to_currency amount, :unit=>"GBP", :precision=>0, :locale=>"en"
+    elsif currency=="ISK"
+      number_to_currency amount, :unit=>"kr.", :precision=>0, format: "%n %u", :locale=>"en"
+    end
+  end
+
+
+  def get_locale_demo_host(domain)
+    locale_host = "https://demo-#{I18n.locale}"
+    if SubInstance.find_by_short_name("demo-#{I18n.locale}")
+      locale_host+domain
+    else
+      "https://demo"+domain
+    end
+  end
+
   def calc_language_completion(count)
     if current_user and current_user.is_root? and count>0
       complete = Tolk::Locale.find_by_name("en").translations.count
@@ -22,11 +54,12 @@ module ApplicationHelper
       end
     end
     all_locales.uniq.each do |locale|
-      next if locale.translations.count<130 and locale.name!=SubInstance.current.default_locale
+      next if locale.translations.count<210 and locale.name!=SubInstance.current.default_locale
       language_name = Tolk::Config.mapping[locale.name]
       #out += link_to("#{language_name}#{calc_language_completion(locale.translations.count)}", "#{url_for(:locale => locale.name)}")
-      out += link_to("#{language_name}#{calc_language_completion(locale.translations.count)}", "/?locale=#{locale.name}")
-      out += "<br>"
+      out += "<li>"
+      out += link_to language_name, "/?locale=#{locale.name}"
+      out += "</li>"
     end
     out.html_safe
   end
@@ -181,7 +214,7 @@ module ApplicationHelper
       end 
     end     
     return "" if r.empty?
-    tr("<b>Notifications:</b><br /> {sentence}", "notifications", :sentence => r.to_sentence)
+    tr("<h5>Notifications</h5>{sentence}", "notifications", :sentence => r.to_sentence)
   end
   
   def messages_sentence(messages)

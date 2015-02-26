@@ -1,10 +1,13 @@
-!!!
 %html{:lang => I18n.locale, "xml:lang" => I18n.locale, :xmlns => "http://www.w3.org/1999/xhtml", "xmlns:fb" => "http://www.facebook.com/2008/fbml", prefix: "og: http://ogp.me/ns#"}
   %head
     %meta{:content => "text/html; charset=utf-8", "http-equiv" => "Content-Type"}/
     %meta{:content => "width=device-width, initial-scale=1.0", :name => "viewport"}
+    %meta{:content => "f7bd4ff2ad1c2848-aabfe1f275c1cd8b-g5ca4676a77b8b93a-15", :name => "google-translate-customization"}/
     %title
-      = " | #{@page_title || current_instance.name}"
+      - if SubInstance.current and SubInstance.current.short_name!="default"
+        = "#{@page_title || current_instance.name}"
+      - else
+        = "#{@page_title || current_instance.name}"
     :javascript
       var PAYMILL_PUBLIC_KEY = '#{ENV['PAYMILL_PUBLIC_KEY']}';
     = render :partial=>"ideas/fb_og_tags"
@@ -13,31 +16,38 @@
     = render :partial => "shared/description"
     = render :partial => "shared/head"
     = render :partial => "shared/javascripts"
-    = javascript_include_tag "https://bridge.paymill.com/"
     = render :partial => "shared/css"
     - if true or Rails.env.production?
       = render :partial => "shared/analytics"
-    = #tr8n_scripts_tag
+    = #IE8 Hack
+    /[if IE 8]
+      = render :partial => "shared/ie8_foundation"
+      = javascript_include_tag 'selectivizr'
+      = respond_include_tags
 %body{class: SubInstance.current.short_name }
   = csrf_meta_tag
-  .page
-    = render :partial => "shared/top_banner"
-    .main
-      .col-group
-        .col-12
-          .col-content.no-margin
-            = render :partial => "sub_instances/message_to_users" if controller_name=="home"
-      .nav.nav-main
-        = render :partial => "shared/side_navigation" #unless SubInstance.current.short_name == "default"
-      #content.content
-        .content-wrap.col-group
-          .col-12
-            .col-content.mainbox
-              = flash_div :warning, :notice, :error
-              = render :partial => "ads/pick"
-              - unless (controller_name == "home" && action_name == "world") or @skip_sub_navigation
-                = render :partial => "shared/sub_navigation"
-              = yield :layout
-    = render :partial => "shared/facebook_footer"
-    = render :partial => "shared/google_plus_footer"
+  .row
+    .large-12.columns
+      = render :partial => "shared/top_banner"
+  .row
+    .large-12.columns
+      .sticky.contain-to-grid
+        = render :partial => "shared/top_navigation"
+  .br
+  .row
+    .large-12.columns
+      = render :partial => "sub_instances/message_to_users" if controller_name=="home"
+  .row
+    .large-12.columns
+      = render :partial => "ads/pick"
+  .row{:class=>"main_row"}
+    .large-9.columns
+      = flash_div :warning, :notice, :error
+      = yield :layout
+    .large-3.columns
+      = render :partial=>"shared/right_column"
+  - if ["donations","subscriptions","subscription_accounts"].include?(controller_name)
+    = javascript_include_tag "https://bridge.paymill.com/"
+  = render :partial => "shared/facebook_footer"
+  = render :partial => "shared/google_plus_footer"
 

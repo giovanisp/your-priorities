@@ -26,6 +26,7 @@ class PointsController < ApplicationController
   end
   
   def newest
+    return redirect_to "/"
     @page_title = tr("Newest points", "controller/points", :sub_instance_name => current_sub_instance.name)
     @points = Point.published.by_recently_created.paginate :include => :idea, :page => params[:page], :per_page => params[:per_page]
     @rss_url = url_for :only_path => false, :format => "rss"
@@ -117,31 +118,35 @@ class PointsController < ApplicationController
   # GET /points/1
   def show
     @point = Point.find(params[:id])
-    if @point.is_removed?
-      flash[:error] = tr("That point was deleted", "controller/points")
-      redirect_to @point.idea
-      return
-    end    
-    @page_title = @point.name
-    @idea = @point.idea
-    if user_signed_in? 
-      @quality = @point.point_qualities.find_by_user_id(current_user.id) 
-    else
-      @quality = nil
-    end
-    @points = nil
-    if @idea.down_points_count > 1 and @point.is_down?
-      @points = @idea.points.published.down.by_recently_created.find(:all, :conditions => "points.id <> #{@point.id}", :include => :idea, :limit => 3)
-    elsif @idea.up_points_count > 1 and @point.is_up?
-      @points = @idea.points.published.up.by_recently_created.find(:all, :conditions => "points.id <> #{@point.id}", :include => :idea, :limit => 3)
-    elsif @idea.neutral_points_count > 1 and @point.is_neutral?
-      @points = @idea.points.published.neutral.by_recently_created.find(:all, :conditions => "points.id <> #{@point.id}", :include => :idea, :limit => 3)
-    end
-    get_qualities if @points and @points.any?
-    respond_to do |format|
-      format.html # show.html.erb
-      format.xml { render :xml => @point.to_xml(:include => [:idea, :other_idea], :except => NB_CONFIG['api_exclude_fields']) }
-      format.json { render :json => @point.to_json(:include => [:idea, :other_idea], :except => NB_CONFIG['api_exclude_fields']) }
+    redirect_to @point.idea.show_url+"#point_anchor_#{@point.id}"
+
+    if false
+      if @point.is_removed?
+        flash[:error] = tr("That point was deleted", "controller/points")
+        redirect_to @point.idea
+        return
+      end
+      @page_title = @point.name
+      @idea = @point.idea
+      if user_signed_in?
+        @quality = @point.point_qualities.find_by_user_id(current_user.id)
+      else
+        @quality = nil
+      end
+      @points = nil
+      if @idea.down_points_count > 1 and @point.is_down?
+        @points = @idea.points.published.down.by_recently_created.find(:all, :conditions => "points.id <> #{@point.id}", :include => :idea, :limit => 3)
+      elsif @idea.up_points_count > 1 and @point.is_up?
+        @points = @idea.points.published.up.by_recently_created.find(:all, :conditions => "points.id <> #{@point.id}", :include => :idea, :limit => 3)
+      elsif @idea.neutral_points_count > 1 and @point.is_neutral?
+        @points = @idea.points.published.neutral.by_recently_created.find(:all, :conditions => "points.id <> #{@point.id}", :include => :idea, :limit => 3)
+      end
+      get_qualities if @points and @points.any?
+      respond_to do |format|
+        format.html # show.html.erb
+        format.xml { render :xml => @point.to_xml(:include => [:idea, :other_idea], :except => NB_CONFIG['api_exclude_fields']) }
+        format.json { render :json => @point.to_json(:include => [:idea, :other_idea], :except => NB_CONFIG['api_exclude_fields']) }
+      end
     end
   end
 
@@ -377,10 +382,15 @@ class PointsController < ApplicationController
 
   def setup_menu_items
       @items = Hash.new
-      @items[1]=[tr("Newest Points", "view/points"), newest_points_url]
-      @items[2]=[tr("Recently revised", "view/points"), revised_points_url]
-      if user_signed_in?
-        @items[3]=[tr("Your ideas' points", "view/ideas"), your_ideas_points_url]
+      item_count = 0
+      if ["new"].include?(action_name)
+        load_endorsement
+        setup_main_ideas_menu
+      else
+        @items[1]=[tr("Newest Points", "view/points"), newest_points_url]
+        if user_signed_in?
+          @items[3]=[tr("Your ideas' points", "view/ideas"), your_ideas_points_url]
+        end
       end
       @items
     end

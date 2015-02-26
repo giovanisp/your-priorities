@@ -61,12 +61,12 @@ fi:
     am: aamupäivä
     pm: iltapäivä
   support:
+    select:
+      prompt: Valitse
     array:
       words_connector: ', '
       two_words_connector: ' ja '
       last_word_connector: ' ja '
-    select:
-      prompt: Valitse
   number:
     format:
       separator: .

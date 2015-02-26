@@ -88,8 +88,17 @@ class FeedController < ApplicationController
 
   def top_feed
     @page_title = tr("Top Feed at {sub_instance_name}", "controller/feed", :sub_instance_name => current_sub_instance.name)
-    last = params[:last].blank? ? Time.now + 1.second : Time.parse(params[:last])
-    @activities = Activity.active.top.feed(last).for_all_users
+    if params[:idea_id]
+      @idea = Idea.unscoped.find(params[:idea_id])
+      if params[:only_comments]
+        @activities = @idea.activities.active.top_discussions.for_all_users.paginate :page => params[:page]
+      else
+        @activities = @idea.activities.active.top.for_all_users.paginate :page => params[:page]
+      end
+    else
+      @activities = Activity.active.top.for_all_users.paginate(:page => params[:page])
+    end
+
     @rss_url = url_for(:only_path => false, :format => "rss")
     respond_to do |format|
       format.js
@@ -197,7 +206,11 @@ class FeedController < ApplicationController
     end
     if user_signed_in? and request.format == 'html' and current_user.unread_notifications_count > 0
       for n in current_user.received_notifications.comments.unread.all
-        n.read!
+        begin
+          n.read!
+        rescue
+          Rails.logger.error("Can't set message to read #{n.inspect}")
+        end
       end
     end
   end
@@ -506,7 +519,8 @@ class FeedController < ApplicationController
   def setup_menu_items
     @items = Hash.new
     @items[1]=[tr("Key activities", "view/feed/_nav"), url_for(:controller => "feed", :action => "top")]
-    @items[2]=[tr("All discussions", "view/feed/_nav"), url_for(:controller => "feed", :action => "discussions")]
+    @items[2]=[tr("Everything", "view/feed/_nav"), url_for(:controller => "feed", :action => "activities")]
+    #@items[2]=[tr("All discussions", "view/feed/_nav"), url_for(:controller => "feed", :action => "discussions")]
     #@items[4]=[tr("Points", "view/feed/_nav"), url_for(:controller => "feed", :action => "points")]
     if user_signed_in?
       @items[3]=[tr("Your discussions", "view/feed/_nav"), url_for(:controller => "feed", :action => "your_discussions")]
@@ -514,7 +528,6 @@ class FeedController < ApplicationController
       @items[5]=[tr("Discussions on #{IDEA_TOKEN_PLURAL} you created", "view/feed/_nav"), url_for(:controller => "feed", :action => "your_ideas_created_discussions")]
       @items[6]=[tr("Your activities", "view/feed_nav"), url_for(controller: 'feed', action: 'your_activities')]
     end
-    @items[7]=[tr("Everything", "view/feed/_nav"), url_for(:controller => "feed", :action => "activities")]
     @items
   end
 

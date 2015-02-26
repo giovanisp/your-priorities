@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130617181641) do
+ActiveRecord::Schema.define(:version => 20150127091845) do
 
   create_table "accounts", :force => true do |t|
     t.string   "name"
@@ -213,13 +213,28 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
 
   add_index "delayed_jobs", ["priority", "run_at"], :name => "delayed_jobs_priority"
 
+  create_table "donations", :force => true do |t|
+    t.string   "cardholder_name"
+    t.string   "email"
+    t.string   "paymill_client_id"
+    t.string   "paymill_transaction_id"
+    t.string   "currency"
+    t.float    "amount"
+    t.datetime "created_at",                               :null => false
+    t.datetime "updated_at",                               :null => false
+    t.string   "organisation_name"
+    t.string   "display_name"
+    t.boolean  "anonymous_donor",        :default => true
+    t.integer  "external_project_id"
+  end
+
   create_table "endorsements", :force => true do |t|
     t.string   "status",          :limit => 50
     t.integer  "position"
     t.integer  "sub_instance_id"
     t.integer  "idea_id"
     t.integer  "user_id"
-    t.string   "ip_address",      :limit => 16
+    t.string   "ip_address"
     t.datetime "created_at"
     t.datetime "updated_at"
     t.integer  "referral_id"
@@ -302,8 +317,8 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.datetime "published_at"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "ip_address",       :limit => 16
-    t.string   "user_agent",       :limit => 150
+    t.string   "ip_address"
+    t.string   "user_agent"
     t.text     "name_diff"
     t.text     "description_diff"
     t.integer  "other_idea_id"
@@ -323,44 +338,44 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
   end
 
   create_table "ideas", :force => true do |t|
-    t.integer  "position",                                :default => 0,     :null => false
+    t.integer  "position",                                 :default => 0,     :null => false
     t.integer  "user_id"
-    t.string   "name",                     :limit => 250
+    t.string   "name",                      :limit => 250
     t.text     "description"
-    t.integer  "endorsements_count",                      :default => 0,     :null => false
-    t.string   "status",                   :limit => 50
-    t.string   "ip_address",               :limit => 16
+    t.integer  "endorsements_count",                       :default => 0,     :null => false
+    t.string   "status",                    :limit => 50
+    t.string   "ip_address"
     t.datetime "removed_at"
     t.datetime "published_at"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.integer  "position_1hr",                            :default => 0,     :null => false
-    t.integer  "position_24hr",                           :default => 0,     :null => false
-    t.integer  "position_7days",                          :default => 0,     :null => false
-    t.integer  "position_30days",                         :default => 0,     :null => false
-    t.integer  "position_1hr_delta",                      :default => 0,     :null => false
-    t.integer  "position_24hr_delta",                     :default => 0,     :null => false
-    t.integer  "position_7days_delta",                    :default => 0,     :null => false
-    t.integer  "position_30days_delta",                   :default => 0,     :null => false
+    t.integer  "position_1hr",                             :default => 0,     :null => false
+    t.integer  "position_24hr",                            :default => 0,     :null => false
+    t.integer  "position_7days",                           :default => 0,     :null => false
+    t.integer  "position_30days",                          :default => 0,     :null => false
+    t.integer  "position_1hr_delta",                       :default => 0,     :null => false
+    t.integer  "position_24hr_delta",                      :default => 0,     :null => false
+    t.integer  "position_7days_delta",                     :default => 0,     :null => false
+    t.integer  "position_30days_delta",                    :default => 0,     :null => false
     t.integer  "change_id"
     t.string   "cached_issue_list"
-    t.integer  "up_endorsements_count",                   :default => 0
-    t.integer  "down_endorsements_count",                 :default => 0
-    t.integer  "points_count",                            :default => 0
-    t.integer  "up_points_count",                         :default => 0
-    t.integer  "down_points_count",                       :default => 0
-    t.integer  "neutral_points_count",                    :default => 0
-    t.integer  "discussions_count",                       :default => 0
-    t.integer  "relationships_count",                     :default => 0
-    t.integer  "changes_count",                           :default => 0
-    t.integer  "official_status",                         :default => 0
-    t.integer  "official_value",                          :default => 0
+    t.integer  "up_endorsements_count",                    :default => 0
+    t.integer  "down_endorsements_count",                  :default => 0
+    t.integer  "points_count",                             :default => 0
+    t.integer  "up_points_count",                          :default => 0
+    t.integer  "down_points_count",                        :default => 0
+    t.integer  "neutral_points_count",                     :default => 0
+    t.integer  "discussions_count",                        :default => 0
+    t.integer  "relationships_count",                      :default => 0
+    t.integer  "changes_count",                            :default => 0
+    t.integer  "official_status",                          :default => 0
+    t.integer  "official_value",                           :default => 0
     t.datetime "status_changed_at"
-    t.integer  "score",                                   :default => 0
-    t.string   "short_url",                :limit => 20
-    t.boolean  "is_controversial",                        :default => false
-    t.integer  "trending_score",                          :default => 0
-    t.integer  "controversial_score",                     :default => 0
+    t.integer  "score",                                    :default => 0
+    t.string   "short_url",                 :limit => 20
+    t.boolean  "is_controversial",                         :default => false
+    t.integer  "trending_score",                           :default => 0
+    t.integer  "controversial_score",                      :default => 0
     t.string   "external_info_1"
     t.string   "external_info_2"
     t.string   "external_info_3"
@@ -369,9 +384,9 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.string   "external_id"
     t.string   "external_name"
     t.integer  "sub_instance_id"
-    t.integer  "flags_count",                             :default => 0
+    t.integer  "flags_count",                              :default => 0
     t.integer  "category_id"
-    t.string   "user_agent",               :limit => 200
+    t.string   "user_agent"
     t.integer  "position_endorsed_24hr"
     t.integer  "position_endorsed_7days"
     t.integer  "position_endorsed_30days"
@@ -382,10 +397,16 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.integer  "group_id"
     t.integer  "idea_revision_id"
     t.string   "author_sentence"
-    t.integer  "idea_revisions_count",                    :default => 0
+    t.integer  "idea_revisions_count",                     :default => 0
     t.text     "notes"
     t.integer  "impressions_count"
     t.string   "occurred_at"
+    t.integer  "counter_endorsements_up",                  :default => 0
+    t.integer  "counter_endorsements_down",                :default => 0
+    t.integer  "counter_points",                           :default => 0
+    t.integer  "counter_comments",                         :default => 0
+    t.integer  "counter_all_activities",                   :default => 0
+    t.integer  "counter_main_activities",                  :default => 0
   end
 
   add_index "ideas", ["category_id"], :name => "index_ideas_on_category_id"
@@ -525,6 +546,8 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.string   "external_link"
     t.string   "layout_for_subscriptions",                       :default => "application"
     t.string   "sales_email"
+    t.string   "about_page_name"
+    t.string   "default_locale",                                 :default => "en"
   end
 
   add_index "instances", ["domain_name"], :name => "index_instances_on_domain_name"
@@ -599,11 +622,13 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
   create_table "pages", :force => true do |t|
     t.text     "title"
     t.text     "content"
-    t.datetime "created_at",                     :null => false
-    t.datetime "updated_at",                     :null => false
-    t.integer  "weight",          :default => 0
+    t.datetime "created_at",                                     :null => false
+    t.datetime "updated_at",                                     :null => false
+    t.integer  "weight",                      :default => 0
     t.integer  "sub_instance_id"
     t.string   "name"
+    t.boolean  "hide_from_menu",              :default => false
+    t.boolean  "hide_from_menu_unless_admin", :default => false
   end
 
   add_index "pages", ["name"], :name => "index_pages_on_name"
@@ -625,12 +650,11 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.integer  "max_users"
     t.datetime "created_at",                          :null => false
     t.datetime "updated_at",                          :null => false
-    t.float    "price_gbp"
-    t.float    "price_usd"
-    t.float    "price_eur"
     t.boolean  "private_instance", :default => false
-    t.float    "price_isk"
     t.boolean  "active",           :default => true
+    t.float    "amount"
+    t.float    "vat"
+    t.string   "paymill_offer_id"
   end
 
   create_table "point_qualities", :force => true do |t|
@@ -676,7 +700,7 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.text     "content_html"
     t.integer  "sub_instance_id"
     t.integer  "flags_count",                                                            :default => 0
-    t.string   "user_agent",               :limit => 200
+    t.string   "user_agent"
     t.string   "ip_address"
   end
 
@@ -731,8 +755,8 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.datetime "published_at"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "ip_address",    :limit => 16
-    t.string   "user_agent",    :limit => 150
+    t.string   "ip_address"
+    t.string   "user_agent"
     t.string   "website",       :limit => 100
     t.text     "content_diff"
     t.integer  "other_idea_id"
@@ -748,8 +772,8 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.integer  "ad_id"
     t.integer  "user_id"
     t.integer  "value",                      :default => 0
-    t.string   "ip_address", :limit => 16
-    t.string   "user_agent", :limit => 1000
+    t.string   "ip_address"
+    t.string   "user_agent"
     t.string   "referrer",   :limit => 1000
     t.datetime "created_at"
     t.datetime "updated_at"
@@ -783,7 +807,7 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.integer  "users_count",                                    :default => 0
     t.string   "website"
     t.datetime "removed_at"
-    t.string   "ip_address",                      :limit => 16
+    t.string   "ip_address"
     t.boolean  "is_daily_summary",                               :default => true
     t.string   "unsubscribe_url"
     t.string   "subscribe_url"
@@ -853,6 +877,19 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.string   "home_page_layout",                               :default => "application"
     t.boolean  "lock_users_to_instance",                         :default => false
     t.boolean  "setup_in_progress",                              :default => false
+    t.text     "map_coordinates"
+    t.string   "organization_type"
+    t.string   "redirect_url"
+    t.text     "description"
+    t.boolean  "use_live_home_page",                             :default => false
+    t.string   "live_stream_id"
+    t.boolean  "ask_for_post_code",                              :default => false
+    t.integer  "counter_ideas",                                  :default => 0
+    t.integer  "counter_points",                                 :default => 0
+    t.integer  "counter_users",                                  :default => 0
+    t.integer  "counter_comments",                               :default => 0
+    t.integer  "counter_stars",                                  :default => 0
+    t.integer  "counter_impressions",                            :default => 0
   end
 
   add_index "sub_instances", ["short_name"], :name => "short_name"
@@ -1414,7 +1451,7 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.boolean  "is_mergeable",                                                               :default => true
     t.integer  "referral_id"
     t.boolean  "is_subscribed",                                                              :default => true
-    t.string   "user_agent",                   :limit => 200
+    t.string   "user_agent"
     t.string   "referrer",                     :limit => 200
     t.boolean  "is_comments_subscribed",                                                     :default => true
     t.boolean  "is_tagger",                                                                  :default => false
@@ -1470,7 +1507,7 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.datetime "suspended_at"
     t.integer  "referrals_count",                                                            :default => 0
     t.boolean  "is_admin",                                                                   :default => false
-    t.integer  "twitter_id"
+    t.integer  "twitter_id",                   :limit => 8
     t.string   "twitter_token",                :limit => 64
     t.string   "twitter_secret",               :limit => 64
     t.datetime "twitter_crawled_at"
@@ -1512,12 +1549,18 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
     t.string   "company"
     t.boolean  "is_root",                                                                    :default => false
     t.integer  "account_id"
-    t.string   "invitation_token",             :limit => 60
+    t.string   "invitation_token"
     t.datetime "invitation_sent_at"
     t.datetime "invitation_accepted_at"
     t.integer  "invitation_limit"
     t.integer  "invited_by_id"
     t.string   "invited_by_type"
+    t.string   "last_locale"
+    t.string   "paymill_id"
+    t.string   "twitter_profile_image_url"
+    t.datetime "invitation_created_at"
+    t.integer  "invitations_count",                                                          :default => 0
+    t.boolean  "is_sub_admin",                                                               :default => false
   end
 
   add_index "users", ["confirmation_token"], :name => "index_users_on_confirmation_token", :unique => true
@@ -1525,6 +1568,7 @@ ActiveRecord::Schema.define(:version => 20130617181641) do
   add_index "users", ["facebook_uid"], :name => "index_users_on_facebook_uid"
   add_index "users", ["identifier_url"], :name => "index_users_on_identifier_url", :unique => true
   add_index "users", ["invitation_token"], :name => "index_users_on_invitation_token", :unique => true
+  add_index "users", ["invitations_count"], :name => "index_users_on_invitations_count"
   add_index "users", ["invited_by_id"], :name => "index_users_on_invited_by_id"
   add_index "users", ["reset_password_token"], :name => "index_users_on_reset_password_token", :unique => true
   add_index "users", ["rss_code"], :name => "index_users_on_rss_code"

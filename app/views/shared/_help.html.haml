@@ -1,6 +1,4 @@
-#sib_help
-  .tab_sublinks
-    %ul
-      - @about_pages.each do |page|
-        %li
-          #{link_to page.title.from_localized_yaml, :controller => "pages", :action => "show", :id=>page.id}
+- if page = Page.where(:name=>"right_nav_help").first
+  %h5
+    %a{:href => "/pages/#{page.id}", :target => '_blank'}
+      = tr("Instructions", "view/users/_form")

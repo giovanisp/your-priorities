@@ -1,4 +1,14 @@
-SocialInnovation::Application.routes.draw do
+#require ‘sidekiq/web’
+
+YourPriorities::Application.routes.draw do
+  match '/donations/thank_you' => 'donations#thank_you'
+  match '/donations/estartup' => 'donations#estartup'
+  match '/donations/status' => 'donations#status'
+  match '/donations/thank_you_estartup' => 'donations#thank_you_estartup'
+
+ # mount Sidekiq::Web, at: ‘/sidekiq’
+
+  resources :donations
 
   resources :subscriptions
   resources :plans
@@ -15,15 +25,14 @@ SocialInnovation::Application.routes.draw do
     omniauth_callbacks: "users/omniauth_callbacks",
   }
 
-  #mount WillFilter::Engine => "/will_filter"
-  #mount Tr8n::Engine => "/tr8n"
- # mount Monologue::Engine, at: '/blog'
+  #mount Monologue::Engine, at: '/blog'
 
   resources :categories
 
   match '/groups/suggest_user' => 'groups#suggest_user'
 
   match '/users/eula' => 'users#eula'
+
 
   match '/ideas/flag/:id' => 'ideas#flag'
   match '/ideas/abusive/:id' => 'ideas#abusive'
@@ -42,6 +51,7 @@ SocialInnovation::Application.routes.draw do
   resources :subscription_accounts do
     collection do
       get :users
+      get :about
     end
   end
 
@@ -146,8 +156,11 @@ SocialInnovation::Application.routes.draw do
       get :endorsed_top_points
       get :comments
       get :documents
-      get :idea_detail
       get :update_status
+      get :move
+      post :move
+      get :change_category
+      put :change_category
   	end
   	collection do
       get :yours
@@ -159,6 +172,10 @@ SocialInnovation::Application.routes.draw do
       get :network
       get :consider
       get :finished
+      get :finished_in_progress
+      get :finished_successful
+      get :finished_failed
+      get :finished_compromised
       get :ads
       get :top
       get :by_tag
@@ -294,7 +311,11 @@ SocialInnovation::Application.routes.draw do
 
   resource :open_id
 
-  match '/' => 'home#index'
+  if ENV['YRPRI_SET_HOME_TO_WORLD']
+    match '/' => 'home#world'
+  else
+    match '/' => 'home#index'
+  end
   match '/unsubscribe' => 'unsubscribes#new', :as => :unsubscribe
   match '/yours' => 'ideas#yours'
   match '/hot' => 'ideas#hot'
@@ -316,6 +337,7 @@ SocialInnovation::Application.routes.draw do
   match ':controller/:action' => '#index'
   match ':controller/:action.:format' => '#index'
   match '/:controller(/:action(/:id))'
+  match ':redirect' => redirect("/404.html"), :as => :catchall , :constraints => { :redirect => /.*/i }
 end
   # The idea is based upon order of creation:
   # first created -> highest idea.

@@ -62,6 +62,27 @@ def change_to_mysql_text(text)
 end
 
 namespace :fix do
+  desc "Resend status msg"
+  task :resend_status_msg do
+    Thread.current[:skip_default_scope_globally] = true
+    IdeaStatusChangeLog.where(["created_at <= ? AND created_at >= ?",DateTime.parse("17/02/2015 13:00"), DateTime.parse("28/01/2015 05:00")]).each do |change_log|
+      next if change_log.id<2399
+      puts change_log.id
+      idea = Idea.find(change_log.idea_id)
+      User.send_status_email(idea.id, idea.official_status, change_log.date, change_log.subject, change_log.content)
+    end
+    Thread.current[:skip_default_scope_globally] = nil
+  end
+
+  desc "FixCat"
+  task :fix_cat do
+    Category.unscoped.all.each do |c|
+      if c.sub_instance_id == nil
+        c.sub_instance_id = SubInstance.find_by_short_name("default").id
+        c.save
+      end
+    end
+  end
 
   desc "Clear sub instance graphics"
   task :clear_sub_instance_graphics => :environment do
@@ -285,8 +306,8 @@ namespace :fix do
 
   desc 'it2'
   task :it2 => :environment do
-    Tagging.update_all("taggable_type='Idea' where taggable_type='Priority'")
-    Notification.update_all("notifiable_type='Idea' where notifiable_type='Priority'")
+    Tagging.update_all("taggable_type='Idea' where taggable_type='Idea'")
+    Notification.update_all("notifiable_type='Idea' where notifiable_type='Idea'")
     ['General', 'Localization', 'User interface', 'Data sources'].each do |name|
       category = Category.find_by_name(name)
       category.destroy

@@ -2,6 +2,8 @@ class Idea < ActiveRecord::Base
   include ActionView::Helpers::DateHelper
   include ActionView::Helpers::UrlHelper
 
+  #attr_accessible :category, :group, :issue_list, :description, :name
+
   is_impressionable :counter_cache => true
 
   acts_as_set_sub_instance :table_name=>"ideas"
@@ -14,19 +16,12 @@ class Idea < ActiveRecord::Base
 
   scope :published, :conditions => "ideas.status = 'published'"
   scope :unpublished, :conditions => "ideas.status not in ('published','abusive')"
-
   scope :not_removed, :conditions => "ideas.status <> 'removed'"
-
   scope :flagged, :conditions => "flags_count > 0"
-
   scope :alphabetical, :order => "ideas.name asc"
-
   scope :by_impressions_count, :order => "ideas.impressions_count desc"
-
   scope :by_most_discussed, :order => "points_count + discussions_count desc"
-
-  scope :top_rank, :order => "ideas.score desc", :conditions=>"position != 0"
-
+  scope :top_rank, :order => "ideas.score desc" # :conditions=>"position != 0"
   scope :top_three, :order => "ideas.score desc", :limit=>3
 
   scope :top_24hr, :conditions => "ideas.position_endorsed_24hr IS NOT NULL", :order => "ideas.position_endorsed_24hr desc"
@@ -37,6 +32,8 @@ class Idea < ActiveRecord::Base
   scope :rising, :conditions => "ideas.trending_score > 0", :order => "ideas.trending_score desc"
   scope :falling, :conditions => "ideas.trending_score < 0", :order => "ideas.trending_score asc"
   scope :controversial, :conditions => "ideas.is_controversial = true", :order => "ideas.controversial_score desc"
+
+  scope :category_filter, lambda{{:conditions => Thread.current[:category_id_filter] ? "ideas.category_id=#{Thread.current[:category_id_filter]}" : nil }}
 
   scope :rising_7days, :conditions => "ideas.position_7days_delta > 0"
   scope :flat_7days, :conditions => "ideas.position_7days_delta = 0"
@@ -49,6 +46,11 @@ class Idea < ActiveRecord::Base
   scope :falling_24hr, :conditions => "ideas.position_24hr_delta < 0"
   
   scope :finished, :conditions => "ideas.official_status in (-2,-1,2)"
+  scope :successful, :conditions => "ideas.official_status = 2"
+  scope :compromised, :conditions => "ideas.official_status = -991"
+  scope :failed, :conditions => "ideas.official_status = -2"
+  scope :in_progress, :conditions => "ideas.official_status in (-1,1)"
+
   scope :revised, :conditions => "idea_revisions_count > 1"
   scope :by_recently_revised, :joins => :idea_revisions, :order => "idea_revisions.created_at DESC"
   
@@ -82,7 +84,7 @@ class Idea < ActiveRecord::Base
   has_many :endorsers, :through => :endorsements, :conditions => "endorsements.status in ('active','inactive')", :source => :user, :class_name => "User"
   has_many :up_endorsers, :through => :endorsements, :conditions => "endorsements.status in ('active','inactive') and endorsements.value=1", :source => :user, :class_name => "User"
   has_many :down_endorsers, :through => :endorsements, :conditions => "endorsements.status in ('active','inactive') and endorsements.value=-1", :source => :user, :class_name => "User"
-    
+
   has_many :points, :conditions => "points.status in ('published','draft')"
   accepts_nested_attributes_for :points
 
@@ -109,18 +111,6 @@ class Idea < ActiveRecord::Base
 
   acts_as_taggable_on :issues
   acts_as_list
-
-  define_index do
-    indexes name
-    indexes description
-    indexes notes
-    #has category.name, :facet=>true, :as=>"category_name"
-    has updated_at
-    has sub_instance_id, :as=>:sub_instance_id, :type => :integer
-    has "1", :as=>:tag_count, :type=>:integer
-    set_property :enable_star => true, :min_prefix_len => 2
-    where "ideas.status in ('published','inactive')"
-  end
 
   auto_html_for(:notes) do
     html_escape
@@ -232,28 +222,32 @@ class Idea < ActiveRecord::Base
   end
 
   def endorse(user,request=nil,referral=nil)
-    endorsement = self.endorsements.find_by_user_id(user.id)
-    if not endorsement
-      endorsement = Endorsement.new(:value => 1, :idea => self, :user => user,:referral => referral)
-      endorsement.ip_address = request.remote_ip if request
-      endorsement.save
-    elsif endorsement.is_down?
-      endorsement.flip_up
-      endorsement.save
+    if user
+      endorsement = self.endorsements.find_by_user_id(user.id)
+      if not endorsement
+        endorsement = Endorsement.new(:value => 1, :idea => self, :sub_instance_id => self.sub_instance_id, :user => user,:referral => referral)
+        endorsement.ip_address = request.remote_ip if request
+        endorsement.save
+        endorsement.insert_lowest_at(4)
+      elsif endorsement.is_down?
+        endorsement.flip_up
+        endorsement.save
+      end
+      if endorsement.is_replaced?
+        endorsement.activate!
+      end
+      return endorsement
     end
-    if endorsement.is_replaced?
-      endorsement.activate!
-    end
-    return endorsement
   end
   
   def oppose(user,request=nil,referral=nil)
     return false if not user
     endorsement = self.endorsements.find_by_user_id(user.id)
     if not endorsement
-      endorsement = Endorsement.new(:value => -1, :idea => self, :user => user, :referral => referral)
+      endorsement = Endorsement.new(:value => -1, :idea => self, :sub_instance_id => self.sub_instance_id, :user => user, :referral => referral)
       endorsement.ip_address = request.remote_ip if request
       endorsement.save
+      endorsement.insert_lowest_at(4)
     elsif endorsement.is_up?
       endorsement.flip_down
       endorsement.save
@@ -315,7 +309,22 @@ class Idea < ActiveRecord::Base
   def is_finished?
     official_status > 1 or official_status < 0
   end
-  
+
+  def official_status_html_name
+    case official_status
+    when -2
+      "<a class='status failed' href='/ideas/finished_failed'>#{tr("Failed","here")}</a>"
+    when 2
+      "<a class='status successful' href='/ideas/finished_successful'>#{tr("Successful","here")}</a>"
+    when -1
+      "<a class='status in_progress' href='/ideas/finished_in_progress'>#{tr("In progress","here")}</a>"
+    when 1
+      "<a class='status in_progress' href='/ideas/finished_in_progress'>#{tr("In progress","here")}</a>"
+    else
+      ""
+    end
+  end
+
   def is_failed?
     official_status == -2
   end
@@ -451,6 +460,8 @@ class Idea < ActiveRecord::Base
   end
 
   def create_status_update(idea_status_change_log)
+    Rails.logger.info("Sending status emails")
+    SendStatusEmail.perform_in(1.second,idea_status_change_log.id)
     return ActivityIdeaStatusUpdate.create(idea: self, idea_status_change_log: idea_status_change_log)
   end
 
@@ -699,6 +710,14 @@ class Idea < ActiveRecord::Base
     end
   end
 
+  def top_points_url(args = {})
+    if self.sub_instance_id
+      self.sub_instance.url('ideas/' + to_param + '/top_points')
+    else
+      Instance.current.homepage_url + 'ideas/top_points' + to_param
+    end
+  end
+
   def new_point_url(args = {})
     supp = args.has_key?(:support) ? "?support=#{args[:support]}" : ""
     if self.sub_instance_id
@@ -756,7 +775,8 @@ class Idea < ActiveRecord::Base
 
   def flag_by_user(user)
     self.increment!(:flags_count)
-    for r in User.active.admins
+    default_sub_instance_id = SubInstance.where(:short_name=>"default").first.id
+    for r in User.active.admins.where("sub_instance_id = ? OR sub_instance_id = ?",default_sub_instance_id,user.sub_instance_id)
       notifications << NotificationIdeaFlagged.new(:sender => user, :recipient => r)
     end
   end  

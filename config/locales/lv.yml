@@ -143,12 +143,12 @@ lv:
           trillion: Triljons
           quadrillion: Kvadriljons
   support:
+    select:
+      prompt: Lūdzu izvēlies
     array:
       words_connector: ', '
       two_words_connector: ' un '
       last_word_connector: ' un '
-    select:
-      prompt: Lūdzu izvēlies
   helpers:
     select:
       prompt: Lūdzu izvēlies

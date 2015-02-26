@@ -61,12 +61,12 @@ cy:
     am: yb
     pm: yh
   support:
+    select:
+      prompt: Dewiswch
     array:
       words_connector: ', '
       two_words_connector: ' a '
       last_word_connector: ', a '
-    select:
-      prompt: Dewiswch
   number:
     format:
       separator: .

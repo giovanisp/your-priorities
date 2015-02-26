@@ -1,5 +1,48 @@
 ---
 da:
+  datetime:
+    prompts:
+      minute: Minut
+      second: Sekund
+      year: År
+      month: Måned
+      day: Dag
+      hour: Time
+    distance_in_words:
+      half_a_minute: et halvt minut
+      less_than_x_seconds:
+        one: mindre end et sekund
+        other: mindre end %{count} sekunder
+      x_seconds:
+        one: et sekund
+        other: '%{count} sekunder'
+      less_than_x_minutes:
+        one: mindre end et minut
+        other: mindre end %{count} minutter
+      x_minutes:
+        one: et minut
+        other: '%{count} minutter'
+      about_x_hours:
+        one: cirka en time
+        other: cirka %{count} timer
+      x_days:
+        one: en dag
+        other: '%{count} dage'
+      about_x_months:
+        one: cirka en måned
+        other: cirka %{count} måneder
+      x_months:
+        one: en måned
+        other: '%{count} måneder'
+      about_x_years:
+        one: cirka et år
+        other: cirka %{count} år
+      over_x_years:
+        one: mere end et år
+        other: mere end %{count} år
+      almost_x_years:
+        one: næsten et år
+        other: næsten %{count} år
   date:
     formats:
       default: '%d.%m.%Y'
@@ -59,12 +102,12 @@ da:
       short: '%e. %b %Y, %H:%M'
       long: '%A, %e. %B %Y, %H:%M'
   support:
+    select:
+      prompt: Vælg...
     array:
       words_connector: ', '
       two_words_connector: ' og '
       last_word_connector: ' og '
-    select:
-      prompt: Vælg...
   number:
     format:
       separator: ','
@@ -104,49 +147,6 @@ da:
           billion: Milliard
           trillion: Billion
           quadrillion: Billiard
-  datetime:
-    distance_in_words:
-      half_a_minute: et halvt minut
-      less_than_x_seconds:
-        one: mindre end et sekund
-        other: mindre end %{count} sekunder
-      x_seconds:
-        one: et sekund
-        other: '%{count} sekunder'
-      less_than_x_minutes:
-        one: mindre end et minut
-        other: mindre end %{count} minutter
-      x_minutes:
-        one: et minut
-        other: '%{count} minutter'
-      about_x_hours:
-        one: cirka en time
-        other: cirka %{count} timer
-      x_days:
-        one: en dag
-        other: '%{count} dage'
-      about_x_months:
-        one: cirka en måned
-        other: cirka %{count} måneder
-      x_months:
-        one: en måned
-        other: '%{count} måneder'
-      about_x_years:
-        one: cirka et år
-        other: cirka %{count} år
-      over_x_years:
-        one: mere end et år
-        other: mere end %{count} år
-      almost_x_years:
-        one: næsten et år
-        other: næsten %{count} år
-    prompts:
-      year: År
-      month: Måned
-      day: Dag
-      hour: Time
-      minute: Minut
-      second: Sekund
   helpers:
     select:
       prompt: Vælg...

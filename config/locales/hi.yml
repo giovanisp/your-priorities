@@ -61,12 +61,12 @@ hi:
     am: पूर्वाह्न
     pm: अपराह्न
   support:
+    select:
+      prompt: कृपया चुनें
     array:
       words_connector: ', '
       two_words_connector: ' और '
       last_word_connector: ', और '
-    select:
-      prompt: कृपया चुनें
   errors:
     format: '%{attribute} %{message}'
     messages:

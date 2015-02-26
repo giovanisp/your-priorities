@@ -21,7 +21,12 @@ class UsersController < ApplicationController
     @user = current_user
     if request.put?
       respond_to do |format|
-        if @user.update_attributes(params[:user])
+        unless User.where(:email=>params[:user][:email]).first
+          @user.email = params[:user][:email] if params[:user][:email]
+        end
+        @user.login = params[:user][:login] if params[:user][:login]
+        @user.buddy_icon = params[:user][:buddy_icon] if params[:user][:buddy_icon]
+        if @user.save(:validate=>false)
           Rails.logger.debug(params[:user])
           Rails.logger.debug(@user.inspect)
           flash[:notice] = tr("Saved settings for {user_name}", "controller/users", :user_name => @user.name)
@@ -124,15 +129,15 @@ class UsersController < ApplicationController
           subscription.save
         end
       end
-      Rails.logger.info("Starting HASH #{params[:user].inspect}")
+      Rails.logger.debug("Starting HASH #{params[:user].inspect}")
       params[:user].each do |hash_value,x|
-        Rails.logger.info(hash_value)
+        Rails.logger.debug(hash_value)
         if hash_value.include?("to_tag_id")
-          Rails.logger.info("DELETING: #{hash_value}")
+          Rails.logger.debug("DELETING: #{hash_value}")
           params[:user].delete(hash_value)
         end
       end
-      Rails.logger.info("After HASH #{params[:user].inspect}")
+      Rails.logger.debug("After HASH #{params[:user].inspect}")
       if not current_user.reports_enabled and params[:user][:reports_enabled].to_i==1
         params[:user][:last_sent_report]=Time.now
       end
@@ -179,13 +184,12 @@ class UsersController < ApplicationController
     redirect_to '/' and return if check_for_suspension
     @page_title = tr("{user_name} at {instance_name}", "controller/users", :user_name => @user.name, :instance_name => current_instance.name)
     #@ideas = @user.endorsements.active.by_position.find(:all, :include => :idea, :limit => 5)
-    @ideas = Idea.published.where(:user_id=>@user.id).limit(10).paginate :page => params[:page], :per_page => params[:per_page]
+    @ideas = Idea.unscoped.published.where(:user_id=>@user.id).paginate :page => params[:page], :per_page => params[:per_page]
     @endorsements = nil
     get_following
     if user_signed_in? # pull all their endorsements on the ideas shown
-      @endorsements = Endorsement.find(:all, :conditions => ["idea_id in (?) and user_id = ? and status='active'", @ideas.collect {|c| c.id},current_user.id])
-    end    
-    @activities = @user.activities.active.by_recently_created.paginate :include => :user, :page => params[:page], :per_page => params[:per_page]
+      @endorsements = Endorsement.unscoped.find(:all, :conditions => ["idea_id in (?) and user_id = ? and status='active'", @ideas.collect {|c| c.id},current_user.id])
+    end
     respond_to do |format|
       format.html
       format.xml { render :xml => @user.to_xml(:methods => [:revisions_count], :include => [:top_endorsement, :referral, :sub_instance_referral], :except => NB_CONFIG['api_exclude_fields']) }
@@ -353,7 +357,7 @@ class UsersController < ApplicationController
   # GET /users/1/followers
   def followers
     @user = User.find(params[:id])
-    redirect_to '/' and return if check_for_suspension
+    return redirect_to '/' # and return if check_for_suspension
     get_following
     @page_title = tr("{count} people are following {user_name}", "controller/users", :user_name => @user.name, :count => @user.followers_count)      
     @followings = @user.followers.up.paginate :page => @page, :per_page => 50
@@ -412,7 +416,7 @@ class UsersController < ApplicationController
     respond_to do |format|
       format.js {
         render :update do |page|
-          #page.replace_html 'your_ideas_container', :partial => "ideas/yours"
+          page.replace_html 'your_ideas_container', :partial => "ideas/yours"
         end
       }
     end
@@ -434,8 +438,7 @@ class UsersController < ApplicationController
     respond_to do |format|
       format.js {
         render :update do |page|
-          #page.replace_html 'your_ideas_container', :partial => "ideas/yours"
-          #page.replace_html 'your_ideas_container', order.inspect
+          page.replace_html 'your_ideas_container', :partial => "ideas/yours"
         end
       }
     end
@@ -555,9 +558,9 @@ class UsersController < ApplicationController
     soap_url = "https://egov.webservice.is/sst/runtime.asvc/com.actional.soapstation.eGOVDKM_AuthConsumer.AccessPoint?WSDL"
     soap = SOAP::WSDLDriverFactory.new(soap_url).create_rpc_driver
     soap.options["protocol.http.basic_auth"] << [soap_url,ENV['ISLYKILL_USER'],ENV['ISLYKILL_PASSWORD']]
-    Rails.logger.info("BEFORE THE RESPONSE <> BEFORE THE RESPONSE")
+    Rails.logger.debug("BEFORE THE RESPONSE <> BEFORE THE RESPONSE")
     response = soap.generateSAMLFromToken(token,:token => token, :ipAddress=>request.remote_ip)
-    Rails.logger.info("THE RESPONSE < #{response} > THE RESPONSE")
+    Rails.logger.debug("THE RESPONSE < #{response} > THE RESPONSE")
     if response and response[0] and response[0].message="Success"
       elements = Nokogiri.parse(response[1])
       name = elements.root.xpath("//blarg:NameIdentifier", {'blarg' => 'urn:oasis:names:tc:SAML:1.0:assertion'}).first.text
@@ -608,7 +611,7 @@ class UsersController < ApplicationController
     else
       raise "No SSN in island.is authentication"
     end
-    Rails.logger.info("Authentication successful for #{ssn} #{response.inspect}")
+    Rails.logger.debug("Authentication successful for #{ssn} #{response.inspect}")
     return true
   end
 

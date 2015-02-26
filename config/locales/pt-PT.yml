@@ -61,12 +61,12 @@ pt-PT:
     am: am
     pm: pm
   support:
+    select:
+      prompt: Por favor seleccione
     array:
       words_connector: ', '
       two_words_connector: ' e '
       last_word_connector: ', e'
-    select:
-      prompt: Por favor seleccione
   number:
     format:
       separator: ','
@@ -205,3 +205,52 @@ pt-PT:
         even: tem de ser par
       full_messages:
         format: '%{attribute}%{message}'
+  01a2f2a00851bab435bced7b0454dce2: Que faz em %{sub_instance_name}?
+  0680c0f4acc215c7c75e5dafe9384e7c: Inserir link para site externo
+  06ba2bc280e5497a86716f2bac565751: Código Google Analytics
+  06df33001c1d7187fdd81ea1f5b277aa: Acções
+  07221d868183bab87e41f0ec47440880: Debates sobre as suas ideias
+  072a47f5e0aa944cef4819332279486f: Mensagem do serviço aos utilizadores
+  00b177e080ff1c3d340997fb01c3951c: Aceitar convite
+  010818f282f6ca53d86d4f988f83744f: Guardar definições
+  01374d70036cb0b48058e7e031eeb680: Precisa de se registar para aceder
+  01434d2ab206eb7f37324a021439b2fa: Devo referenciar com o seu nome ou o nome da sua
+    página web?
+  019ec3132cdf8ee0f2e2a75cf5d3e459: Gênero
+  021da1b20f73dc252361a54d80497ef3: Posição
+  0323de4f66a1700e2173e9bcdce02715: Sair
+  03368e3c1eb4d2a9048775874301b19f: Seleccione categoria
+  03fa96387303a39d8a63c153bac26958: 'Reservamos o direito de:'
+  04742c1a5a675be0659d83d65cb79661: Ideias a subir nos rankings
+  05548e37933024a0c44227c6c1476932: .
+  0574c44ee9d51a85091b24119d5c2f69: Ideias mais recentes
+  05bd4146a6d042d2c8033ff38973f8f1: Falhou a importação dos seus contactos windows
+    live.
+  06277ee8d0fd9ef7427ca88315ba493a: Falhou a conexão pelo Twitter
+  006a226cb52da43e63800809bd1cb3f6: '%{user_name} votou abaixo na ideia %{position}'
+  0077d575bfc52d2176b427189982b6a6: Salvo %{point_name}
+  02bb5de0c787154b2cfaea82d1cfc40d: Cancelar esta revisão
+  052d9de783ead76d6ab1eae9c35f29db: Depois de entrar altere a sua password.
+  06591670b8600f71493c779ff6c5e331: '%{position} mais influente'
+  07cf1f790935949c02c3289638e3ea40: Debates onde os seus seguidores participam
+  083f66b6e0c1c0e39ea7803620d7dd9f: Mude de plano
+  devise:
+    invitations:
+      new:
+        header: Enviar convite
+      send_instructions: Um email de convite foi enviado para %{email}.
+      updated: Senha definida com sucesso. Agora está conectado.
+  4b1b4dc8cf38b3c64b1d657da8f5ac8c: Relatório
+  ab70cd88a40e7c3247bfce039ad0045d: Inserir mais que 5 carateres
+  80df8e95c1fef941a4f600f0fd1b07c8: Inserir mais que 12 carateres
+  d7c8c85bf79bbe1b7188497c32c3b0ca: Falhou
+  9b9d8a976b42e0bd66381797644943d5: Publicado
+  22af645d1859cb5ca6da0c484f1f37ea: novo
+  4607ccb71469675944516398e717479c: Aceitar os termos e condições
+  9ee2fe857acedeff0c24765e3d2a25f9: Indicar o seu nome
+  cd267635c8a38e2acba076b0edeeedbe: Debates na tua rede
+  b38f1c5b8bdb6329e8a4b2e6e456da8b: Debates nas ideias que criaste
+  8754f2b7cbd98752793ba8314bded062: Debates ativos
+  c867451892e38db47a8cc5e7b02d5c54: Que apoia
+  5a9d18bb87ff12835dc844883c5c3ebe: alterações
+  db7fcf41127935e5fee505fe102abf9a: Seus debates

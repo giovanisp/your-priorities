@@ -1,6 +1,13 @@
 class SubInstance < ActiveRecord::Base
   require 'paperclip'
-  
+  scope :top10,
+        select("sub_instances.id, sub_instances.short_name, sub_instances.iso_country_id, sub_instances.iso_country_id, sub_instances.name, count(ideas.id) AS idea_count").
+            joins(:ideas).
+            group("sub_instances.id").
+            where("sub_instances.iso_country_id IS NOT NULL").
+            order("idea_count DESC").
+            limit(10)
+
   scope :active, :conditions => "status in ('pending','active')"
   
   scope :with_logo, :conditions => "logo_file_name is not null"
@@ -43,12 +50,14 @@ class SubInstance < ActiveRecord::Base
   validates_attachment_content_type :logo, :content_type => ['image/jpeg', 'image/png', 'image/gif']
   
   has_one :owner, :class_name => "User", :foreign_key => "sub_instance_id"
-  has_many :signups
-  has_many :users, :through => :signups
+
+  has_many :users
   has_many :activities
   has_many :ideas
+  has_many :comments
+
   belongs_to :subscription
-  
+  has_many :points
   has_one :iso_country, :class_name => 'IsoCountry'
 
   include Workflow
@@ -82,47 +91,54 @@ class SubInstance < ActiveRecord::Base
   #before_validation :shorten_name
   def setup!
     instance = Instance.first
-    self.external_link = instance.external_link
     self.setup_in_progress = false
     self.save!
   end
 
   belongs_to :iso_country, :class_name => 'IsoCountry', :foreign_key => :iso_country_id
 
-  def logo_url
-    if self.logo.to_s.include?("missing.png")
-      Instance.current.logo.url(:icon_full)
+  def logo_url(what_type=:icon_full)
+    unless self.logo?
+      Instance.current.logo.url(what_type)
     else
-      self.logo.url(:icon_full)
+      self.logo.url(what_type)
     end
   end
 
-  def external_link_logo_url
+  def external_link_logo_url(what_type=:icon_full)
     if self.external_link_logo.to_s.include?("missing.png")
-      Instance.current.external_link_logo.url(:icon_full)
+      Instance.current.external_link_logo.url(what_type)
     else
-      self.external_link_logo.url(:icon_full)
+      self.external_link_logo.url(what_type)
     end
   end
 
-  def top_banner_url
+  def top_banner_url(what_type=:icon_full)
     if self.top_banner.to_s.include?("missing.png")
-      Instance.current.top_banner.url(:icon_full)
+      Instance.current.top_banner.url(what_type)
     else
-      self.top_banner.url(:icon_full)
+      self.top_banner.url(what_type)
     end
   end
 
-  def menu_strip_side_url
-    if self.menu_strip_side.to_s.include?("missing.png")
-      Instance.current.menu_strip_side.url(:icon_full)
+  def external_link_url(what_type=:icon_full)
+    if self.external_link and self.external_link!=""
+      self.external_link
     else
-      self.menu_strip_side.url(:icon_full)
+      Instance.current.external_link
+    end
+  end
+
+  def menu_strip_side_url(what_type=:icon_full)
+    if self.menu_strip_side.to_s.include?("missing.png")
+      Instance.current.menu_strip_side.url(what_type)
+    else
+      self.menu_strip_side.url(what_type)
     end
   end
 
   def url(path = '')
-    if Rails.env.development?
+    if Rails.env.development? or Rails.env.test?
       if path =~ /\?/
         path = path + "&sub_instance_short_name=#{self.short_name}"
       else
@@ -138,7 +154,7 @@ class SubInstance < ActiveRecord::Base
       'https://' + Instance.first.base_url + '/' + path
     else
       if short_name == "default"
-        'https://' + Instance.current.base_url + '/' + path
+        'https://www.' + Instance.current.base_url + '/' + path
       else
         'https://' + self.short_name + '.' + Instance.current.base_url + '/' + path
       end
@@ -171,9 +187,8 @@ class SubInstance < ActiveRecord::Base
     errors.on("unsubscribe_url")       
   end
 
-  validates_length_of       :short_name,    :within => 2..70, :message => tr("should be between 2 and 50 characters.","here")
   validates_uniqueness_of   :short_name, :case_sensitive => false, :message => tr("is already taken.","here")
-  validates_length_of       :name, :within => 2..50, :message => tr("should be within 3 and 50 characters.","here")
+  validates_length_of       :name, :within => 2..50, :message => tr("should be within 2 and 50 characters.","here")
 
   ReservedShortnames = %w[admin blog ftp mail pop pop3 imap smtp stage stats status www localize feedback facebook]
   validates_exclusion_of :short_name, :in => ReservedShortnames, :message => tr("is already taken","here")
@@ -236,7 +251,15 @@ class SubInstance < ActiveRecord::Base
   end
   
   def show_url
-    self.url
+    if self.redirect_url
+      self.redirect_url
+    else
+      self.url
+    end
+  end
+
+  def show_users_url_with_auto_auth(secret)
+    self.url("subscription_accounts/users?aa_secret=#{secret}")
   end
 
   def show_url_with_auto_auth(secret)

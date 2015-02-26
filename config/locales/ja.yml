@@ -3,8 +3,9 @@ ja:
   date:
     formats:
       default: '%Y/%m/%d'
-      short: '%m/%d'
       long: '%Y年%m月%d日(%a)'
+      short: プラダ アウトレット [url=http://www.shpmidday.com/]カシオ casio[/url]  <a href="http://www.shpmidday.com/"
+        title="カシオ casio">カシオ casio</a>
     day_names:
     - 日曜日
     - 月曜日
@@ -61,12 +62,12 @@ ja:
     am: 午前
     pm: 午後
   support:
+    select:
+      prompt: 選択してください。
     array:
       words_connector: と
       two_words_connector: と
       last_word_connector: と
-    select:
-      prompt: 選択してください。
   errors:
     format: '%{attribute}%{message}'
     messages:

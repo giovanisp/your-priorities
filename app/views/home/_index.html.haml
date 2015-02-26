@@ -8,10 +8,47 @@
     po.src = 'https://apis.google.com/js/plusone.js';
     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
   });
-- if @new_ideas.any?
+- if false and @blog_posts.any?
   %div.home_welcome
     %h1.home_h1
-      = tr("New #{IDEA_TOKEN_PLURAL_CAPS}","home")
+      = tr("News", "view/ideas")
+      = #link_to tr("News", "view/ideas"),"/blog"
+    %table
+      %tr
+        - @blog_posts.each do |post|
+          %td{:width=>"33%", :valign=>"top"}
+            - post_revision = post.posts_revisions.last
+            = render :partial=>"/home/blog_post", :locals=>{:post=>post_revision}
+    %br
+- if @finished_ideas.any?
+  %div.home_welcome
+    %h2.home_h1
+      = link_to tr("In official status", "view/ideas", :count=>Idea.finished.not_removed.count), "/ideas/finished"
+    %ul
+      %li.successful{:style=>"display: inline;padding-right:10px;"}
+        %b
+          = link_to tr("Officially successful ({count})", "view/ideas", :count=>Idea.successful.not_removed.count), "/ideas/finished_successful"
+      %li.failed{:style=>"display: inline;padding-right:10px;"}
+        = link_to tr("Officially failed ({count})", "view/ideas",:count=>Idea.failed.not_removed.count), "/ideas/finished_failed"
+      %li.in_progress{:style=>"display: inline;padding-right:10px;"}
+        = link_to tr("Officially in progress ({count})", "view/ideas", :count=>Idea.in_progress.not_removed.count), "/ideas/finished_in_progress"
+    - @finished_ideas.each do |idea|
+      = render :partial=>"ideas/top_level_listing", :locals=>{:idea=>idea, :endorsements=>@endorsements}
+      %div
+        %div{:id => "idea_detail_#{idea.id}"}
+    = "&nbsp;".html_safe
+- if @random_ideas.any?
+  %div.home_welcome
+    %h2.home_h1
+      = link_to tr("Random #{IDEA_TOKEN_PLURAL_CAPS}","home"),"/ideas/random"
+    - @random_ideas.each do |idea|
+      = render :partial=>"ideas/top_level_listing", :locals=>{:idea=>idea, :endorsements=>@endorsements}
+      %div
+        %div{:id => "idea_detail_#{idea.id}"}
+- if @new_ideas.any?
+  %div.home_welcome{:style=>"margin-top: 22px; padding-top: 22px;"}
+    %h2.home_h1
+      = link_to tr("New #{IDEA_TOKEN_PLURAL_CAPS}","home"), "ideas/newest"
     - @new_ideas.each do |idea|
       = render :partial=>"ideas/top_level_listing", :locals=>{:idea=>idea, :endorsements=>@endorsements}
       %div
@@ -19,36 +56,25 @@
 - else
   .home_welcome
     %h2
+      %br
       = tr("Welcome to your {instance_name}. Please add your first #{IDEA_TOKEN} ", "controller/sub_instances", :instance_name => current_instance.name)
-      = link_to tr("here","here"),"/ideas/new"
-      = "."
+      = link_to tr("here.","here"),"/ideas/new"
 - if @top_ideas and @top_ideas.any?
-  %div.home_welcome{:style=>"margin-top: 10px; padding-top: 10px;"}
-    %h1.home_h2
+  %div.home_welcome{:style=>"margin-top: 0px; padding-top: 0px;"}
+    %h2.home_h2
       &nbsp;
-    %h1.home_h1
-      = tr("Top #{IDEA_TOKEN_PLURAL} past 7 days", "controller/ideas")
+    %h2.home_h1
+      = link_to tr("Trending #{IDEA_TOKEN_PLURAL}", "controller/ideas"),"/ideas/top_7days"
     - @top_ideas.each do |idea|
-      = render :partial=>"ideas/top_level_listing", :locals=>{:idea=>idea, :endorsements=>@endorsements}
-      %div
-        %div{:id => "idea_detail_#{idea.id}"}
-- if @random_ideas.any?
-  %div.home_welcome
-    %h1.home_h2
-      &nbsp;
-    %h1.home_h1
-      = tr("Random #{IDEA_TOKEN_PLURAL_CAPS}","home")
-    - @random_ideas.each do |idea|
       = render :partial=>"ideas/top_level_listing", :locals=>{:idea=>idea, :endorsements=>@endorsements}
       %div
         %div{:id => "idea_detail_#{idea.id}"}
 - unless @activities.blank?
   %div.home_welcome
-    %h1.home_h2
+    %h2.home_h2
       &nbsp;
-    %h1.home_h1
+    %h2.home_h1
       = tr("Latest Activity","home")
-    %ul#endless_scroll_ul.list{:last => @activities.to_a.last.changed_at}
-      = render :template => 'feed/activity_list_simple'
-      #infinite-scroll
-      .endless_scroll_inner_wrap
+    .endless_scroll_activities
+      = render :partial => 'feed/activity_list_simple'
+    = link_to tr("More...","here"), "/feed/top_feed?page?#{@activities.next_page}", :class => 'load-more-posts', :remote => true if @activities.next_page

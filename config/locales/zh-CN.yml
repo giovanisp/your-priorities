@@ -172,12 +172,12 @@ zh-CN:
           trillion: 兆
           quadrillion: 千兆
   support:
+    select:
+      prompt: 请选择
     array:
       words_connector: ', '
       two_words_connector: ' 和 '
       last_word_connector: ', 和 '
-    select:
-      prompt: 请选择
   activerecord:
     errors:
       template:
